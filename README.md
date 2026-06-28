@@ -96,6 +96,57 @@ recognize the file type.
 - **Activity Calories** has no dedicated folder in this export, so it falls back
   to mirroring **Calories Burned** for each day.
 
+### Design decisions & findings
+
+Notes from building the script, kept here because they explain *why* it works
+the way it does and which parts are confirmed vs. assumed.
+
+**Source data is not one consistent format.** Fitbit's local export organizes
+data into per-metric folders, and *within a single folder files can be either
+JSON or CSV* — there's no guarantee of one format per metric. Folder names also
+vary in spacing, punctuation, and capitalization across exports (e.g.
+`Floors Climbed` vs. `Floors-Climbed`), which is why matching normalizes names
+to lowercase alphanumerics and does substring matching against an alias list
+rather than requiring exact names.
+
+**JSON vs. CSV field handling.** JSON files consistently use `dateTime` / `value`
+keys across every metric, so those are hardcoded. CSV files vary in both column
+naming (Distance uses a `distance` column, not `value`) and delimiter (Distance
+came tab-separated, not comma), so the delimiter is auto-detected per file and
+column names are matched case-insensitively against a metric-specific hint list,
+falling back to a generic `value` column. Column detection runs once per file
+(from the first record), assuming consistent columns within a single file.
+
+**Timezone handling was the critical fix.** The initial (wrong) assumption was
+that JSON `dateTime` strings like `"06/25/26 14:30:00"` were naive *local*
+times, with only the CSV `...Z` timestamps being UTC. Direct testing proved
+both are actually UTC. Summing June 25 2026 steps two ways: treating the JSON
+timestamp as already-local gave 5,095 (mismatch); treating it as UTC converted
+to Pacific gave 3,569 — an exact match with the Fitbit app. This matters because
+UTC and Pacific differ by 7–8 hours, enough to push late-afternoon-through-
+midnight readings into the wrong calendar day. The fix: every timestamp, JSON or
+CSV, is treated as UTC and converted to a configurable local timezone (via
+`zoneinfo`, which handles PST/PDT transitions correctly) before its day is
+determined.
+
+**Calorie rounding discrepancy (investigated, not a bug).** A ~2-calorie
+mismatch against the Fitbit app on one day was root-caused to rounding: the
+unrounded per-minute sum (1685.62) rounds to 1686, matching the script exactly,
+while the app's 1684 likely comes from per-minute rounding before summing. At
+~0.1% on a multi-thousand-calorie day this is floating-point/rounding noise, not
+a logic error.
+
+**Distance unit conversion is an unconfirmed assumption.** Distance values are
+treated as meters per record (summed, then ÷1000 for km), inferred from sample
+values (8.8, 6.8) looking like plausible per-minute walking distances — but,
+unlike Steps and Calories, this was *not* directly confirmed against the Fitbit
+app. Spot-check before trusting Distance figures.
+
+**Error-handling philosophy.** Missing metric folders default that column to 0
+with a warning rather than failing the run, since not every export includes
+every metric. Malformed individual records are skipped with a warning rather
+than failing the whole file, so one corrupt row can't block a year of data.
+
 ---
 
 ## `fitbit_convert_weight_to_garmin.py`
