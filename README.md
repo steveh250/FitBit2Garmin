@@ -1,16 +1,51 @@
 # FitBit2Garmin
 
-Two small, dependency-free Python scripts for converting a local **Fitbit data
-export** into the CSV formats that **Garmin Connect's import tools** expect.
+![Status](https://img.shields.io/badge/status-stable-brightgreen)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
+![Dependencies](https://img.shields.io/badge/dependencies-none-success)
+![License](https://img.shields.io/badge/license-unspecified-lightgrey)
 
-Both scripts work entirely offline — they read files already on disk and write
-new files. There are no Fitbit or Garmin API calls, no authentication, and no
-network access of any kind.
+A pair of small, dependency-free Python command-line scripts that convert a
+local **Fitbit data export** into the CSV formats that **Garmin Connect's import
+tools** expect. Both run entirely offline — they read files already on disk and
+write new files, with no Fitbit/Garmin API calls, no authentication, and no
+network access. **Target audience:** individuals migrating their own historical
+Fitbit data to Garmin Connect who are comfortable running a Python script from a
+terminal.
 
 | Script | Converts | Produces |
 | --- | --- | --- |
 | [`fitbit_activities_to_garmin.py`](#fitbit_activities_to_garminpy) | A folder of daily-activity metrics (steps, calories, distance, floors, active minutes) | One `Activities_<year>.csv` per calendar year |
 | [`fitbit_convert_weight_to_garmin.py`](#fitbit_convert_weight_to_garminpy) | A single Fitbit weight-export CSV | One Garmin `Body` weight-import CSV |
+
+> **Badge notes.** This is a local script collection with no CI pipeline and no
+> hosted deployment, so *build status* and *latest deployment* badges are not
+> applicable. No `LICENSE` file is present, so the licence is currently
+> unspecified.
+
+## Quickstart
+
+No build or install step is required — clone and run:
+
+```bash
+git clone https://github.com/steveh250/FitBit2Garmin.git
+cd FitBit2Garmin
+python3 fitbit_activities_to_garmin.py /path/to/export_folder ./out          # activities
+python3 fitbit_convert_weight_to_garmin.py weight_export.csv weight_out.csv   # weight
+```
+
+That's it — outputs land in `./out` (per-year activity CSVs) and `weight_out.csv`.
+
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Component model, data flow, and per-function inventory |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Setup, prerequisites, and local-run procedure |
+| [`docs/FR.md`](docs/FR.md) | Functional requirements with acceptance criteria and status |
+| [`docs/NFR.md`](docs/NFR.md) | Non-functional requirements (ISO 25010) and status |
+| [`docs/TEST-CASES.md`](docs/TEST-CASES.md) | Test cases linked to requirements, with results |
+| [`docs/SCHEMA.md`](docs/SCHEMA.md) | Data structures and file formats (no database — see rationale) |
 
 ## Requirements
 
@@ -19,6 +54,20 @@ network access of any kind.
 
 On some minimal Linux installs you may need the system tz database for
 `zoneinfo` to resolve IANA timezone names (e.g. `apt install tzdata`).
+
+## Known limitations & out of scope
+
+- **Distance unit is an unconfirmed assumption** (treated as meters per record).
+  Verify against your Fitbit dashboard before trusting Distance figures.
+- **No timezone conversion in the weight script** — the UTC calendar date is
+  kept as-is, so weigh-ins near midnight UTC may land on a different local day.
+- **No deduplication, sorting, or outlier filtering** — both scripts are
+  faithful pass-through transforms; clean source data beforehand.
+- **`Activity Calories` and `BMI`/`Fat` are derived/zero-filled**, not real
+  source data (no such fields exist in the export).
+- **Out of scope for this release:** any network/API integration, a GUI or web
+  interface, automated upload to Garmin, sleep/heart-rate/SpO₂ metrics, and an
+  automated test suite (current verification is manual — see `docs/TEST-CASES.md`).
 
 ---
 
