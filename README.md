@@ -97,6 +97,62 @@ Example:
 python fitbit_activities_to_garmin.py ~/Downloads/MyFitbitData ./out --timezone Europe/London
 ```
 
+### Example run
+
+A full multi-year export produces output like this. Note the per-metric folder
+matches (including the `Minutes Moderately Active` → `minutes_fairly_active`
+alias), the `NO MATCHING FOLDER FOUND` warning for the absent `activity_calories`
+folder, and one file written per calendar year:
+
+```text
+Timezone for day-bucketing: America/Vancouver
+Distance conversion: assuming raw unit is meters, x0.001 -> km
+JSON datetime format assumed: %m/%d/%y %H:%M:%S
+CSV timestamps assumed ISO 8601 (e.g. 2019-06-09T16:46:00Z)
+
+Scanning for metric folders...
+  steps: matched folder(s) -> Steps
+  calories: matched folder(s) -> Calories
+  distance: matched folder(s) -> Distance
+  floors: matched folder(s) -> Floors-Climbed
+  minutes_sedentary: matched folder(s) -> Minutes Sedentary
+  minutes_lightly_active: matched folder(s) -> Minutes Lightly Active
+  minutes_fairly_active: matched folder(s) -> Minutes Moderately Active
+  minutes_very_active: matched folder(s) -> Minutes Very Active
+  activity_calories: NO MATCHING FOLDER FOUND (will default to 0)
+
+Aggregating daily totals per metric...
+  steps: 75 file(s) processed across 1 folder(s)
+  calories: 86 file(s) processed across 1 folder(s)
+  distance: 75 file(s) processed across 1 folder(s)
+  floors: 64 file(s) processed across 1 folder(s)
+  minutes_sedentary: 87 file(s) processed across 1 folder(s)
+  minutes_lightly_active: 87 file(s) processed across 1 folder(s)
+  minutes_fairly_active: 87 file(s) processed across 1 folder(s)
+  minutes_very_active: 87 file(s) processed across 1 folder(s)
+Wrote 236 day(s) to Activities_2019.csv
+Wrote 366 day(s) to Activities_2020.csv
+Wrote 365 day(s) to Activities_2021.csv
+Wrote 365 day(s) to Activities_2022.csv
+Wrote 365 day(s) to Activities_2023.csv
+Wrote 366 day(s) to Activities_2024.csv
+Wrote 365 day(s) to Activities_2025.csv
+Wrote 182 day(s) to Activities_2026.csv
+
+Done. Before importing into Garmin, spot-check a few rows against
+your Fitbit dashboard for a known day -- especially Distance, since
+the unit conversion is an assumption, not a confirmed spec.
+
+If any metric showed 'NO MATCHING FOLDER FOUND' above, check the
+actual folder name in your export and tell me -- METRIC_FOLDER_ALIASES
+may need a new alias added.
+```
+
+> **Tip:** Always review the `Scanning for metric folders...` section. A
+> `NO MATCHING FOLDER FOUND` line means that column will be `0` for every day —
+> if that metric *does* exist in your export under a different folder name, add
+> an alias to `METRIC_FOLDER_ALIASES` in the script.
+
 ### How it works
 
 - **Folder matching** is case-insensitive and fuzzy: punctuation and spaces are
